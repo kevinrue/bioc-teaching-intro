@@ -58,6 +58,19 @@ ggplot(plot_data, aes(IL1B, MARCHF1, color = time)) +
 
 # Lines showing expression of genes over time. ----
 
+plot_data <- tibble(
+    value = assay(se)[which(rowData(se)$symbol == "IL12B"), ]
+    ) %>%
+    bind_cols(as.data.frame(colData(se)))
+
+ggplot(plot_data, aes(time, value + 1)) +
+    geom_point() +
+    facet_grid(infection ~ status) +
+    geom_smooth(aes(group = interaction(status, infection))) +
+    scale_y_log10() +
+    cowplot::theme_cowplot() +
+    labs(title = "IL12B", y = "counts")
+
 # Lines showing expression of genes over time for different variables. ----
 
 # Faceting is very important.  ----
