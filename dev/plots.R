@@ -74,3 +74,19 @@ ggplot(plot_data, aes(time, value + 1)) +
 # Lines showing expression of genes over time for different variables. ----
 
 # Faceting is very important.  ----
+# See above. 
+
+# Number of genes detected over time ----
+
+plot_data <- tibble(
+    value = colSums(assay(se) > 0)
+    ) %>%
+    bind_cols(as.data.frame(colData(se)))
+
+ggplot(plot_data, aes(time, value)) +
+    geom_point() +
+    facet_grid(infection ~ status) +
+    geom_smooth(aes(group = interaction(status, infection), color = infection, linetype = status)) +
+    cowplot::theme_cowplot() +
+    labs(title = "Number of genes detected", y = "Genes")
+
