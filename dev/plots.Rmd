@@ -1,0 +1,129 @@
+---
+title: "Plots"
+author: "Kevin Rue-Albrecht"
+date: "22/11/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Import dependencies
+
+```{r, message=FALSE}
+library(here)
+library(SummarizedExperiment)
+library(RColorBrewer)
+library(tibble)
+library(ggplot2)
+library(cowplot)
+library(dplyr)
+library(tidyr)
+```
+
+# Import data set
+
+```{r}
+se <- readRDS(here::here('rds/se.gene_symbol.rds'))
+```
+
+# Define color maps
+
+```{r}
+colormap.time <- c(brewer.pal(9, "Set3")[c(2,7:8)], brewer.pal(12, "Paired")[5])
+names(colormap.time) <- c("2h", "4h", "6h", "Blank")
+colormap.infection <- brewer.pal(12, "Paired")[c(9,4,2,5)]
+names(colormap.infection) <- c("D23580", "LT2", "Mock", "Blank")
+colormap.status <- brewer.pal(12, "Paired")[c(9,1,7,3,5)]
+names(colormap.status) <- c("BULK", "exposed", "uninfected", "infected", "Blank")
+```
+
+# Plate layout
+
+```{r}
+plot_data <- as.data.frame(colData(se)) %>%
+    separate(well, c("row", "column"), 1) %>% 
+    mutate(
+        row = factor(row, rev(sort(unique(row)))),
+        column = factor(as.numeric(as.character(column))),
+        plate = gsub("P", "Plate ", plate)
+    )
+```
+
+## Time
+
+```{r}
+ggplot(plot_data) +
+    geom_tile(aes(column, row, fill = time), color = 'black') +
+    facet_wrap(~plate) +
+    scale_fill_manual(values = colormap.time) +
+    labs(
+        x = NULL, y = NULL, fill = "Time"
+    ) +
+    theme_minimal() +
+    theme(
+        panel.grid.major = element_blank()
+    )
+```
+
+## Infection
+
+```{r}
+ggplot(plot_data) +
+    geom_tile(aes(column, row, fill = infection), color = 'black') +
+    facet_wrap(~plate) +
+    scale_fill_manual(values = colormap.infection) +
+    labs(
+        x = NULL, y = NULL, fill = "Infection"
+    ) +
+    theme_minimal() +
+    theme(
+        panel.grid.major = element_blank()
+    )
+```
+
+## Status
+
+```{r}
+ggplot(plot_data) +
+    geom_tile(aes(column, row, fill = status), color = 'black') +
+    facet_wrap(~plate) +
+    scale_fill_manual(values = colormap.status) +
+    labs(
+        x = NULL, y = NULL, fill = "Status"
+    ) +
+    theme_minimal() +
+    theme(
+        panel.grid.major = element_blank()
+    )
+```
+
+# Subset to cells only ----
+
+```{r}
+keep <- with(
+    colData(se),
+    status %in% c("uninfected", "exposed", "infected"))
+se.cells <- se[, keep]
+```
+
+# Number of genes detected over time ----
+
+```{r}
+plot_data <- tibble(
+    value = colSums(assay(se.cells) > 0)
+    ) %>%
+    bind_cols(as.data.frame(colData(se.cells)))
+```
+
+```{r, warning=FALSE, message=FALSE}
+ggplot(plot_data, aes(time, value)) +
+    geom_point() +
+    facet_grid(infection ~ status) +
+    geom_smooth(aes(group = interaction(status, infection), color = infection, linetype = status)) +
+    cowplot::theme_cowplot() +
+    labs(title = "Number of genes detected", y = "Genes") +
+    cowplot::theme_cowplot()
+```
+
