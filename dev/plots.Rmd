@@ -28,15 +28,26 @@ library(tidyr)
 se <- readRDS(here::here('rds/se.gene_symbol.rds'))
 ```
 
+# Set experimental levels
+
+```{r}
+levels.time <- c("2h", "4h", "6h", "Blank")
+se$time <- factor(se$time, levels.time)
+levels.infection <- c("Mock", "LT2", "D23580", "Blank")
+se$infection <- factor(se$infection, levels.infection)
+levels.status <- c("uninfected", "exposed", "infected", "BULK", "Blank")
+se$status <- factor(se$status, levels.status)
+```
+
 # Define color maps
 
 ```{r}
 colormap.time <- c(brewer.pal(9, "Set3")[c(2,7:8)], brewer.pal(12, "Paired")[5])
-names(colormap.time) <- c("2h", "4h", "6h", "Blank")
+names(colormap.time) <- levels.time
 colormap.infection <- brewer.pal(12, "Paired")[c(9,4,2,5)]
-names(colormap.infection) <- c("D23580", "LT2", "Mock", "Blank")
+names(colormap.infection) <- levels.infection
 colormap.status <- brewer.pal(12, "Paired")[c(9,1,7,3,5)]
-names(colormap.status) <- c("BULK", "exposed", "uninfected", "infected", "Blank")
+names(colormap.status) <- levels.status
 ```
 
 # Plate layout
@@ -119,11 +130,95 @@ plot_data <- tibble(
 
 ```{r, warning=FALSE, message=FALSE}
 ggplot(plot_data, aes(time, value)) +
-    geom_point() +
+    geom_jitter(width = 0.1, height = 0, size = 0.5) +
     facet_grid(infection ~ status) +
     geom_smooth(aes(group = interaction(status, infection), color = infection, linetype = status)) +
-    cowplot::theme_cowplot() +
-    labs(title = "Number of genes detected", y = "Genes") +
-    cowplot::theme_cowplot()
+    labs(title = "Number of genes detected", y = "Genes", x = "Time", color = "Infection", linetype = "Status") +
+    theme_bw() +
+    theme(panel.grid.minor.y = element_blank()) +
+    scale_color_manual(values = colormap.infection)
+```
+
+# Gene expression: box plot ----
+
+```{r}
+plot_data <- tibble(
+    value = assay(se.cells)[which(rowData(se)$symbol == "IL12B"), ]
+    ) %>%
+    bind_cols(as.data.frame(colData(se.cells)))
+```
+
+```{r, warning=FALSE}
+ggplot(plot_data, aes(time, value, fill = time)) +
+    geom_boxplot() +
+    facet_grid(infection ~ status) +
+    scale_y_log10() +
+    labs(title = "IL12B", y = "Counts", x = "Time", fill = "Time") +
+    theme_bw() +
+    theme(panel.grid.minor.y = element_blank()) +
+    scale_fill_manual(values = colormap.time)
+```
+
+# Gene expression: violin plot ----
+
+```{r}
+plot_data <- tibble(
+    value = assay(se.cells)[which(rowData(se)$symbol == "IL12B"), ]
+    ) %>%
+    bind_cols(as.data.frame(colData(se.cells)))
+```
+
+```{r, warning=FALSE}
+ggplot(plot_data, aes(time, value, fill = time)) +
+    geom_violin(draw_quantiles = 0.5, scale = "width") +
+    facet_grid(infection ~ status) +
+    scale_y_log10() +
+    labs(title = "IL12B", y = "Counts", x = "Time", fill = "Time") +
+    theme_bw() +
+    theme(panel.grid.minor.y = element_blank()) +
+    scale_fill_manual(values = colormap.time)
+```
+
+# Gene expression: violin plot ----
+
+```{r}
+plot_data <- tibble(
+    value = assay(se.cells)[which(rowData(se)$symbol == "IL12B"), ]
+    ) %>%
+    bind_cols(as.data.frame(colData(se.cells)))
+```
+
+```{r, warning=FALSE, message=FALSE}
+ggplot(plot_data, aes(time, value + 1)) +
+    geom_jitter(width = 0.1, height = 0, size = 0.5) +
+    geom_smooth(aes(group = interaction(status, infection), color = infection)) +
+    scale_y_log10() +
+    facet_grid(infection ~ status) +
+    labs(title = "IL12B", y = "counts") +
+    theme_bw() +
+    theme(panel.grid.minor.y = element_blank()) +
+    scale_color_manual(values = colormap.infection)
+```
+
+# Scatter plot gene 1 vs gene 2, showing samples/cells, coloured based on their annotation. ----
+
+```{r}
+plot_data <- tibble(
+    IL1B = assay(se.cells)[which(rowData(se)$symbol == "IL1B"), ],
+    MARCHF1 = assay(se.cells)[which(rowData(se)$symbol == "MARCHF1"), ]
+    ) %>%
+    bind_cols(as.data.frame(colData(se.cells)))
+```
+
+```{r, warning=FALSE}
+ggplot(plot_data, aes(IL1B, MARCHF1, color = time)) +
+    geom_point() +
+    facet_grid(infection ~ status) +
+    scale_y_log10() + scale_x_log10() +
+    theme_dark() +
+    theme(
+        panel.grid.minor.y = element_blank(),
+        panel.grid.major = element_line(color = "white")) +
+    scale_color_manual(values = colormap.time)
 ```
 
