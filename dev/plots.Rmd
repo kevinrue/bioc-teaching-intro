@@ -37,6 +37,8 @@ levels.infection <- c("Mock", "LT2", "D23580", "Blank")
 se$infection <- factor(se$infection, levels.infection)
 levels.status <- c("uninfected", "exposed", "infected", "BULK", "Blank")
 se$status <- factor(se$status, levels.status)
+levels.treatment <- c("Mock\nuninfected", "LT2\nexposed", "LT2\ninfected", "D23580\nexposed",  "D23580\ninfected", "Mock\nBULK", "LT2\nBULK", "D23580\nBULK",  "Blank\nBlank")
+se$treatment <- factor(interaction(se$infection, se$status, sep = "\n"), levels.treatment)
 ```
 
 # Define color maps
@@ -48,6 +50,8 @@ colormap.infection <- brewer.pal(12, "Paired")[c(9,4,2,5)]
 names(colormap.infection) <- levels.infection
 colormap.status <- brewer.pal(12, "Paired")[c(9,1,7,3,5)]
 names(colormap.status) <- levels.status
+colormap.treatment <- RColorBrewer::brewer.pal(9, "Paired")[c(9,3,4,1,2,9,4,2,5)]
+names(colormap.treatment) <- gsub("_","\n", levels.treatment)
 ```
 
 # Plate layout
@@ -118,6 +122,25 @@ keep <- with(
     status %in% c("uninfected", "exposed", "infected"))
 se.cells <- se[, keep]
 ```
+
+# Number of cells per condition ----
+
+```{r}
+plot_data <- as_tibble(colData(se.cells))
+```
+
+```{r, warning=FALSE, message=FALSE}
+ggplot(plot_data, aes(treatment, fill = treatment)) +
+    geom_bar() +
+    facet_wrap(~ time, nrow = 1) +
+    labs(title = "Number of cells per condition", y = "Cells", x = "Treatment", fill = "Treatment") +
+    theme_bw() +
+    theme(
+        panel.grid.minor.y = element_blank(),
+        panel.grid.major.y = element_blank()) +
+    scale_fill_manual(values = colormap.treatment)
+```
+
 
 # Number of genes detected over time ----
 
