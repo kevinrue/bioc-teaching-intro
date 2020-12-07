@@ -211,14 +211,13 @@ plot_data <- tibble(
 ```
 
 ```{r, warning=FALSE}
-ggplot(plot_data, aes(IL1B, MARCHF1, color = time)) +
-    geom_point() +
+ggplot(plot_data, aes(IL1B, MARCHF1, fill = time)) +
+    geom_point(shape = 21, color = "black", stroke = 0.5, size = 2) +
     facet_grid(infection ~ status) +
     scale_y_log10() + scale_x_log10() +
-    theme_dark() +
+    theme_bw() +
     theme(
-        panel.grid.minor.y = element_blank(),
         panel.grid.major = element_line(color = "white")) +
-    scale_color_manual(values = colormap.time)
+    scale_fill_manual(values = colormap.time)
 ```
 
